@@ -66,6 +66,12 @@ def eliminar_tarea(tareas):
         if idx < 1 or idx > len(tareas):
             print("Número fuera de rango.")
             return
+        
+        confirmacion = input("¿Seguro que quieres eliminar esta tarea? (s/n): ").lower()
+        if confirmacion != "s":
+            print("Operacion cancelada.")
+            return
+        
         tarea_eliminada = tareas.pop(idx -1)
         guardar_tareas(tareas)
         print(f"Tarea eliminada: '{tarea_eliminada['texto']}'")
