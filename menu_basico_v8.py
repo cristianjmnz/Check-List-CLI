@@ -28,9 +28,16 @@ def listar_tareas(tareas):
         print("\nNo hay tareas")
         return
     
-    for i, t in enumerate(tareas, 1):
-        estado = "✔" if t["completada"] else "✖"
-        print(f"{i}.[{estado}] {t['texto']}")
+    contador = 1
+    
+    for t in tareas:
+        if not t["completada"]:
+            estado = "○"
+            print(f"{contador}.[{estado}] {t['texto']}")
+            contador +=1
+        
+    if contador == 1:
+        print("\nTodas las tareas están completadas. ¡Buen trabajo!")
 
 def cargar_tareas():
     if not os.path.exists(FILE):
@@ -44,18 +51,22 @@ def guardar_tareas(tareas):
 
 def marcar_completada(tareas):
     listar_tareas(tareas)
+    pendientes = []
+    
+    for i, t in enumerate(tareas,1):
+        if not t["completada"]:
+            pendientes.append((i,t))
+    
     try:
         idx = int(input("\nNúmero de tarea: "))
-        if idx < 1 or idx > len(tareas):
+        if idx < 1 or idx > len(pendientes):
             print("Numero fuera de rango")
             return
 
-        if tareas[idx - 1]["completada"]:
-            print("⚠ Esa tarea ya está completada.")
-            return
-
-        tareas[idx - 1]["completada"] = True
+        indice_real = pendientes[idx - 1][0]
+        tareas[indice_real - 1]["completada"] = True
         guardar_tareas(tareas)
+
     except ValueError:
         print("Numero no valido")
 
