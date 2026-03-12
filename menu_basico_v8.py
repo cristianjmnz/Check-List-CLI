@@ -3,9 +3,12 @@ import os
 
 FILE = "tareas.json"
 
+from colorama import init, Fore, Style
+init()
+
 
 def mostrar_menu():
-    print("\n==== CHECK LIST ====")
+    print("\n========== \nCHECK LIST \n==========")
     print("1. Añadir tarea")
     print("2. Listar tareas")
     print("3. Buscar tarea")
@@ -13,6 +16,9 @@ def mostrar_menu():
     print("5. Editar tarea")
     print("6. Eliminar tarea")
     print("0. Salir")
+
+def limpiar_pantalla():
+    os.system("cls" if os.name == "nt" else "clear")
 
 def añadir_tarea(tareas):
     texto = input("\nEscribe la tarea: ").strip()
@@ -32,8 +38,8 @@ def listar_tareas(tareas):
     
     for t in tareas:
         if not t["completada"]:
-            estado = "○"
-            print(f"{contador}.[{estado}] {t['texto']}")
+            estado = Fore.YELLOW + "○" + Style.RESET_ALL
+            print(f"{contador:>2}.[{estado}] {t['texto']}")
             contador +=1
         
     if contador == 1:
@@ -60,7 +66,7 @@ def marcar_completada(tareas):
     try:
         idx = int(input("\nNúmero de tarea: "))
         if idx < 1 or idx > len(pendientes):
-            print("Numero fuera de rango")
+            print(Fore.RED + "Número fuera de rango" + Style.RESET_ALL)
             return
 
         indice_real = pendientes[idx - 1][0]
@@ -74,23 +80,40 @@ def eliminar_tarea(tareas):
     if not tareas:
         print("\nNo hay tareas para eliminar.")
         return
+
     listar_tareas(tareas)
+
+    pendientes = []
+    for i, t in enumerate(tareas, 1):
+        if not t["completada"]:
+            pendientes.append((i, t))
+
+    entrada = input("\nSelecciona tareas a eliminar (ej: 1 3 5): ").split()
+
     try:
-        idx = int(input("\nSelecciona la tarea que desea eliminar: "))
-        if idx < 1 or idx > len(tareas):
-            print("Número fuera de rango.")
-            return
-        
-        confirmacion = input("¿Seguro que quieres eliminar esta tarea? (s/n): ").lower()
-        if confirmacion != "s":
-            print("Operacion cancelada.")
-            return
-        
-        tarea_eliminada = tareas.pop(idx -1)
-        guardar_tareas(tareas)
-        print(f"Tarea eliminada: '{tarea_eliminada['texto']}'")
+        numeros = [int(n) for n in entrada]
     except ValueError:
-        print("Debes introducir un número válido.")
+        print("Debes introducir solo números.")
+        return
+
+    numeros.sort(reverse=True)
+
+    confirmacion = input("¿Seguro que quieres eliminar estas tareas? (s/n): ").lower()
+    if confirmacion != "s":
+        print("Operación cancelada.")
+        return
+
+    for n in numeros:
+        if n < 1 or n > len(pendientes):
+            print(f"Número fuera de rango: {n}")
+            continue
+
+        indice_real = pendientes[n - 1][0]
+        tareas.pop(indice_real - 1)
+
+    guardar_tareas(tareas)
+
+    print(Fore.GREEN + "✔ Tareas eliminadas." + Style.RESET_ALL)
 
 def editar_tarea(lista):
     listar_tareas(lista)
@@ -146,6 +169,11 @@ def main():
     tareas = cargar_tareas()
 
     while True:
+        limpiar_pantalla()
+
+        pendientes = sum(1 for t in tareas if not t["completada"])
+        print(f"\nTienes {pendientes} tarea(s) pendiente(s).")
+
         mostrar_menu()
         opcion = input("\nSelecciona una opción: ")
 
@@ -171,6 +199,8 @@ def main():
 
         elif opcion == "0":
             break
+
+        input("\nPresiona Enter para continuar...")
 
 if __name__ == "__main__":
     main()
