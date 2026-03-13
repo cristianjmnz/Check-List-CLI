@@ -8,14 +8,16 @@ init()
 
 
 def mostrar_menu():
-    print("\n========== \nCHECK LIST \n==========")
-    print("1. Añadir tarea")
-    print("2. Listar tareas")
-    print("3. Buscar tarea")
-    print("4. Marcar tarea como completada")
-    print("5. Editar tarea")
-    print("6. Eliminar tarea")
-    print("0. Salir")
+    print(Fore.GREEN + "\n╔══════════════════════╗" + Style.RESET_ALL)
+    print(Fore.GREEN + "║      CHECK LIST      ║" + Style.RESET_ALL)
+    print(Fore.GREEN + "╚══════════════════════╝" + Style.RESET_ALL)
+    print(Fore.YELLOW + "1." + Style.RESET_ALL + " Añadir tarea")
+    print(Fore.YELLOW + "2." + Style.RESET_ALL + " Listar tareas")
+    print(Fore.YELLOW + "3." + Style.RESET_ALL + " Buscar tarea")
+    print(Fore.YELLOW + "4." + Style.RESET_ALL + " Marcar tarea como completada")
+    print(Fore.YELLOW + "5." + Style.RESET_ALL + " Editar tarea")
+    print(Fore.YELLOW + "6." + Style.RESET_ALL + " Eliminar tarea")
+    print(Fore.YELLOW + "0." + Style.RESET_ALL + " Salir")
 
 def limpiar_pantalla():
     os.system("cls" if os.name == "nt" else "clear")
@@ -39,11 +41,11 @@ def listar_tareas(tareas):
     for t in tareas:
         if not t["completada"]:
             estado = Fore.YELLOW + "○" + Style.RESET_ALL
-            print(f"{contador:>2}.[{estado}] {t['texto']}")
+            print(f"{contador:>2} | {estado} {t['texto']}")
             contador +=1
         
     if contador == 1:
-        print("\nTodas las tareas están completadas. ¡Buen trabajo!")
+        print(Fore.GREEN + "\nTodas las tareas están completadas. ¡Buen trabajo!" + Style.RESET_ALL)
 
 def cargar_tareas():
     if not os.path.exists(FILE):
@@ -172,7 +174,7 @@ def main():
         limpiar_pantalla()
 
         pendientes = sum(1 for t in tareas if not t["completada"])
-        print(f"\nTienes {pendientes} tarea(s) pendiente(s).")
+        print(Fore.CYAN + f"\n📋 Tienes {pendientes} tarea(s) pendiente(s)." + Style.RESET_ALL)
 
         mostrar_menu()
         opcion = input("\nSelecciona una opción: ")
