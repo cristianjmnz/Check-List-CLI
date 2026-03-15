@@ -1,3 +1,6 @@
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+
 import json
 import os
 
@@ -118,30 +121,41 @@ def eliminar_tarea(tareas):
     print(Fore.GREEN + "✔ Tareas eliminadas." + Style.RESET_ALL)
 
 def editar_tarea(lista):
-    listar_tareas(lista)
-
     if not lista:
         print("\nNo hay tareas para editar.")
         return
     
     listar_tareas(lista)
 
+    # Construimos la misma lista de pendientes con su indice real
+    pendientes = []
+    for i, t in enumerate(lista, 1):
+        if not t["completada"]:
+            pendientes.append((i,t))
+    if not pendientes:
+        print(Fore.RED + "No hay tareas pendientes para editar." + Style.RESET_ALL)
+        return
+
     try:
-        indice = int(input("Número de la tarea a editar: ")) -1
+        idx = int(input("Número de la tarea a editar: "))
 
-        if 0 <= indice < len(lista):
-            print(f"Texto actual: {lista[indice]['texto']}")
-            nuevo_texto = input("Nuevo texto: ").strip()
+        if idx < 1 or idx > len(pendientes):
+            print(Fore.RED + "Número fuera de rango." + Style.RESET_ALL)
+            return
 
-            if not nuevo_texto:
-                print("No puedes dejar la tarea vacía.")
-                return
+        #Recuperamos el indice real dentro de la lista
+        indice_real, tarea = pendientes[idx - 1]
 
-            lista[indice]["texto"] = nuevo_texto
-            guardar_tareas(lista)
-            print("✏️ Tarea actualizada")
-        else:
-            print("Ese número no existe.")
+        print(f"Texto actual: {tarea['texto']}")
+        nuevo_texto = input("Nuevo texto: ").strip()
+
+        if not nuevo_texto:
+            print("No puedes dejar la tarea vacía.")
+            return
+
+        lista[indice_real - 1]["texto"] = nuevo_texto
+        guardar_tareas(lista)
+        print("✏️ Tarea actualizada")
 
     except ValueError:
         print("Debes introducir un número valido")
