@@ -9,6 +9,7 @@ FILE = "tareas.json"
 from colorama import init, Fore, Style
 init()
 
+from datetime import datetime
 
 def mostrar_menu():
     print(Fore.GREEN + "\n╔══════════════════════╗" + Style.RESET_ALL)
@@ -25,30 +26,58 @@ def mostrar_menu():
 def limpiar_pantalla():
     os.system("cls" if os.name == "nt" else "clear")
 
+def tiempo_relativo(fecha_str):
+    ahora = datetime.now()
+    fecha = datetime.fromisoformat(fecha_str)
+    diferencia = ahora - fecha
+
+    segundos = int(diferencia.total_seconds())
+    minutos = segundos // 60
+    horas = minutos // 60
+    dias = horas // 24
+    semanas = dias // 7
+    meses = dias // 30
+
+    if segundos < 60:
+        return "Hace un momento"
+    elif minutos < 60:
+        return f"Hace {minutos} minuto{'s' if minutos > 1 else ''}"
+    elif horas < 24:
+        return f"Hace {horas} hora{'s' if horas > 1 else ''}"
+    elif dias < 7:
+        return f"Hace {dias} dia{'s' if dias > 1 else ''}"
+    elif semanas < 4:
+        return f"Hace {semanas} semana{'s' if semanas > 1 else ''}"
+    else:
+        return f"Hace {meses} mes{'s' if meses > 1 else ''}"
+
 def añadir_tarea(tareas):
     texto = input("\nEscribe la tarea: ").strip()
     if not texto:
         print("No puedes añadir una tarea vacía.")
         return
 
-    tareas.append({"texto":texto, "completada":False})
+    tareas.append({"texto":texto, "completada":False, "fecha":datetime.now().isoformat()})
     guardar_tareas(tareas)
 
 def listar_tareas(tareas):
     if not tareas:
         print("\nNo hay tareas")
         return
-    
-    contador = 1
-    
-    for t in tareas:
-        if not t["completada"]:
-            estado = Fore.YELLOW + "○" + Style.RESET_ALL
-            print(f"{contador:>2} | {estado} {t['texto']}")
-            contador +=1
-        
-    if contador == 1:
+
+    pendientes = obtener_pendientes_ordenados(tareas)
+
+    if not pendientes:
         print(Fore.GREEN + "\nTodas las tareas están completadas. ¡Buen trabajo!" + Style.RESET_ALL)
+        return
+
+    for contador, (_, t) in enumerate(pendientes, 1):
+        estado = Fore.YELLOW + "○" + Style.RESET_ALL
+        if "fecha" in t:
+            tiempo = Fore.CYAN + f"({tiempo_relativo(t['fecha'])})" + Style.RESET_ALL
+        else:
+            tiempo = Fore.CYAN + "(Sin fecha)" + Style.RESET_ALL
+        print(f"{contador:>2} | {estado} {t['texto']:<30} {tiempo}")
 
 def cargar_tareas():
     if not os.path.exists(FILE):
@@ -62,24 +91,20 @@ def guardar_tareas(tareas):
 
 def marcar_completada(tareas):
     listar_tareas(tareas)
-    pendientes = []
-    
-    for i, t in enumerate(tareas,1):
-        if not t["completada"]:
-            pendientes.append((i,t))
-    
+    pendientes = obtener_pendientes_ordenados(tareas)
+
     try:
         idx = int(input("\nNúmero de tarea: "))
         if idx < 1 or idx > len(pendientes):
             print(Fore.RED + "Número fuera de rango" + Style.RESET_ALL)
             return
 
-        indice_real = pendientes[idx - 1][0]
+        indice_real, _ = pendientes[idx - 1]
         tareas[indice_real - 1]["completada"] = True
         guardar_tareas(tareas)
 
     except ValueError:
-        print("Numero no valido")
+        print("Número no válido")
 
 def eliminar_tarea(tareas):
     if not tareas:
@@ -87,11 +112,7 @@ def eliminar_tarea(tareas):
         return
 
     listar_tareas(tareas)
-
-    pendientes = []
-    for i, t in enumerate(tareas, 1):
-        if not t["completada"]:
-            pendientes.append((i, t))
+    pendientes = obtener_pendientes_ordenados(tareas)
 
     entrada = input("\nSelecciona tareas a eliminar (ej: 1 3 5): ").split()
 
@@ -101,51 +122,42 @@ def eliminar_tarea(tareas):
         print("Debes introducir solo números.")
         return
 
-    numeros.sort(reverse=True)
-
     confirmacion = input("¿Seguro que quieres eliminar estas tareas? (s/n): ").lower()
     if confirmacion != "s":
         print("Operación cancelada.")
         return
 
-    for n in numeros:
-        if n < 1 or n > len(pendientes):
-            print(f"Número fuera de rango: {n}")
-            continue
+    # Ordenar en reversa por índice real para no desplazar posiciones al borrar
+    indices_a_borrar = sorted(
+        [pendientes[n - 1][0] for n in numeros if 1 <= n <= len(pendientes)],
+        reverse=True
+    )
 
-        indice_real = pendientes[n - 1][0]
+    for indice_real in indices_a_borrar:
         tareas.pop(indice_real - 1)
 
     guardar_tareas(tareas)
-
     print(Fore.GREEN + "✔ Tareas eliminadas." + Style.RESET_ALL)
 
-def editar_tarea(lista):
-    if not lista:
+def editar_tarea(tareas):
+    if not tareas:
         print("\nNo hay tareas para editar.")
         return
-    
-    listar_tareas(lista)
 
-    # Construimos la misma lista de pendientes con su indice real
-    pendientes = []
-    for i, t in enumerate(lista, 1):
-        if not t["completada"]:
-            pendientes.append((i,t))
+    listar_tareas(tareas)
+    pendientes = obtener_pendientes_ordenados(tareas)
+
     if not pendientes:
         print(Fore.RED + "No hay tareas pendientes para editar." + Style.RESET_ALL)
         return
 
     try:
-        idx = int(input("Número de la tarea a editar: "))
-
+        idx = int(input("\nNúmero de tarea a editar: "))
         if idx < 1 or idx > len(pendientes):
             print(Fore.RED + "Número fuera de rango." + Style.RESET_ALL)
             return
 
-        #Recuperamos el indice real dentro de la lista
         indice_real, tarea = pendientes[idx - 1]
-
         print(f"Texto actual: {tarea['texto']}")
         nuevo_texto = input("Nuevo texto: ").strip()
 
@@ -153,12 +165,12 @@ def editar_tarea(lista):
             print("No puedes dejar la tarea vacía.")
             return
 
-        lista[indice_real - 1]["texto"] = nuevo_texto
-        guardar_tareas(lista)
-        print("✏️ Tarea actualizada")
+        tareas[indice_real - 1]["texto"] = nuevo_texto
+        guardar_tareas(tareas)
+        print("✏️  Tarea actualizada.")
 
     except ValueError:
-        print("Debes introducir un número valido")
+        print("Debes introducir un número válido.")
 
 def buscar_tarea(tareas):
     palabra = input("¿Qué tarea buscas?: ").strip().lower()
@@ -180,6 +192,11 @@ def buscar_tarea(tareas):
             encontrado = True
     if not encontrado:
         print("No se encontraron tareas con esa palabra.")
+
+def obtener_pendientes_ordenados(tareas):
+    pendientes = [(i, t) for i, t in enumerate(tareas, 1) if not t["completada"]]
+    pendientes.sort(key=lambda x: x[1].get("fecha", ""), reverse=True)
+    return pendientes
 
 def main():
     tareas = cargar_tareas()
