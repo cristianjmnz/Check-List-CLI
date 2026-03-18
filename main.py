@@ -127,7 +127,7 @@ def tiempo_relativo(fecha_str):
     elif semanas < 4:
         return f"Hace {semanas} semana{'s' if semanas > 1 else ''}"
     else:
-        return f"Hace {meses} mes{'s' if meses > 1 else ''}"
+        return f"Hace {meses} mes{'es' if meses > 1 else ''}"
 
 def añadir_tarea(tareas, tags):
     texto = input("\nEscribe la tarea: ").strip()
@@ -191,8 +191,8 @@ def guardar_tareas(tareas):
     with open(FILE, "w", encoding="utf-8") as f:
         json.dump(tareas, f, indent=4, ensure_ascii=False)
 
-def marcar_completada(tareas):
-    listar_tareas(tareas)
+def marcar_completada(tareas, tags):
+    listar_tareas(tareas, tags)
     pendientes = obtener_pendientes_ordenados(tareas)
 
     try:
@@ -230,10 +230,14 @@ def eliminar_tarea(tareas, tags):
         return
 
     # Ordenar en reversa por índice real para no desplazar posiciones al borrar
-    indices_a_borrar = sorted(
-        [pendientes[n - 1][0] for n in numeros if 1 <= n <= len(pendientes)],
-        reverse=True
-    )
+    indices_a_borrar = []
+    for n in numeros:
+        if 1 <= n <= len(pendientes):
+            indices_a_borrar.append(pendientes[n - 1][0])
+        else:
+            print(Fore.RED + f"Número {n} fuera de rango" + Style.RESET_ALL)
+    
+    indices_a_borrar.sort(reverse=True)
 
     for indice_real in indices_a_borrar:
         tareas.pop(indice_real - 1)
@@ -318,7 +322,7 @@ def main():
         elif opcion == "3":
             buscar_tarea(tareas)
         elif opcion == "4":
-            marcar_completada(tareas)
+            marcar_completada(tareas, tags)
         elif opcion == "5":
             editar_tarea(tareas, tags)
         elif opcion == "6":
