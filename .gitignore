@@ -21,3 +21,9 @@ __pycache__/
 # DATOS GENERADOS
 tareas.json
 tags.json
+
+# PyInstaller
+build/
+dist/
+*.spec 
+.venv/
