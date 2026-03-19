@@ -47,7 +47,7 @@ Descarga el `.exe` desde la sección [Releases](../../releases) y ejecútalo. No
 
 ```bash
 # 1. Clona el repositorio
-git clone https://github.com/cristianjmnz/Check_List_CLI.git
+git clone https://github.com/cristianjmnz/Check-List-CLI.git
 cd Check_List
 
 # 2. Instala las dependencias
@@ -79,6 +79,7 @@ pip install -r requirements.txt
 Check_List/
 ├── main.py             # Punto de entrada del programa
 ├── tareas.json         # Generado automáticamente al añadir tareas
+├── tags.json           # Generado automáticamente al crear el 1º tag
 ├── requirements.txt    # Dependencias del proyecto
 ├── .gitignore
 └── README.md
