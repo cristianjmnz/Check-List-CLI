@@ -17,6 +17,7 @@ Gestor de tareas en línea de comandos hecho con Python. Ligero, rápido y sin d
 4. Marcar tarea como completada
 5. Editar tarea
 6. Eliminar tarea
+7. Gestionar tags
 0. Salir
 ```
 
@@ -30,6 +31,7 @@ Gestor de tareas en línea de comandos hecho con Python. Ligero, rápido y sin d
 - **Marcar como completada** — marca tareas terminadas sin eliminarlas
 - **Editar tareas** — modifica el texto de cualquier tarea pendiente
 - **Eliminar tareas** — elimina una o varias tareas a la vez con confirmación
+- **Gestionar tags** — ver, crea y elimina tags 
 - **Persistencia** — las tareas se guardan en un archivo JSON local
 - **Interfaz con colores** — gracias a `colorama`
 
