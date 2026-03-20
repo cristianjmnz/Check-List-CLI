@@ -7,7 +7,7 @@ def get_connection():
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
-def creardb():
+def crear_db():
     conn = get_connection()
     cursor = conn.cursor()
 
