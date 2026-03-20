@@ -22,6 +22,8 @@ COLORES_DISPONIBLES = {
     "blanco": Fore.WHITE,
 }
 
+from database import crear_db
+
 def cargar_tags():
     if not os.path.exists(FILE_TAGS):
         return {}
@@ -305,6 +307,7 @@ def obtener_pendientes_ordenados(tareas):
     return pendientes
 
 def main():
+    crear_db()
     tareas = cargar_tareas()
     tags   = cargar_tags()       # ← añade esto
 

@@ -18,9 +18,13 @@ __pycache__/
 .idea/
 .vscode/
 
-# DATOS GENERADOS
+# DATOS LOCALES
 tareas.json
 tags.json
+tareas.db
+
+# SCRIPTS PUNTUALES
+migrar.py
 
 # PyInstaller
 build/
