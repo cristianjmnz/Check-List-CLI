@@ -17,6 +17,7 @@ Gestor de tareas en línea de comandos hecho con Python. Ligero, rápido y sin d
 4. Marcar tarea como completada
 5. Editar tarea
 6. Eliminar tarea
+7. Gestionar tags
 0. Salir
 ```
 
@@ -30,6 +31,7 @@ Gestor de tareas en línea de comandos hecho con Python. Ligero, rápido y sin d
 - **Marcar como completada** — marca tareas terminadas sin eliminarlas
 - **Editar tareas** — modifica el texto de cualquier tarea pendiente
 - **Eliminar tareas** — elimina una o varias tareas a la vez con confirmación
+- **Gestionar tags** — ver, crea y elimina tags 
 - **Persistencia** — las tareas se guardan en un archivo JSON local
 - **Interfaz con colores** — gracias a `colorama`
 
@@ -47,7 +49,7 @@ Descarga el `.exe` desde la sección [Releases](../../releases) y ejecútalo. No
 
 ```bash
 # 1. Clona el repositorio
-git clone https://github.com/cristianjmnz/Check_List_CLI.git
+git clone https://github.com/cristianjmnz/Check-List-CLI.git
 cd Check_List
 
 # 2. Instala las dependencias
@@ -79,6 +81,7 @@ pip install -r requirements.txt
 Check_List/
 ├── main.py             # Punto de entrada del programa
 ├── tareas.json         # Generado automáticamente al añadir tareas
+├── tags.json           # Generado automáticamente al crear el 1º tag
 ├── requirements.txt    # Dependencias del proyecto
 ├── .gitignore
 └── README.md
