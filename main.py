@@ -4,8 +4,9 @@ sys.stdout.reconfigure(encoding='utf-8')
 import json
 import os
 
-FILE = "tareas.json"
-FILE_TAGS = "tags.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FILE = os.path.join(BASE_DIR, "tareas.json")
+FILE_TAGS = os.path.join(BASE_DIR, "tags.json")
 
 from colorama import init, Fore, Back, Style
 init()
@@ -102,12 +103,17 @@ def mostrar_menu():
 def cargar_tags():
     if not os.path.exists(FILE_TAGS):
         return {}
-    with open(FILE_TAGS, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(FILE_TAGS, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return {}
 
 def guardar_tags(tags):
-    with open(FILE_TAGS, "w", encoding="utf-8") as f:
+    tmp = FILE_TAGS + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(tags, f, indent=4, ensure_ascii=False)
+    os.replace(tmp, FILE_TAGS)
 
 def gestionar_tags(tags):
     while True:
@@ -200,12 +206,17 @@ def tiempo_relativo(fecha_str):
 def cargar_tareas():
     if not os.path.exists(FILE):
         return []
-    with open(FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
 
 def guardar_tareas(tareas):
-    with open(FILE, "w", encoding="utf-8") as f:
+    tmp = FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(tareas, f, indent=4, ensure_ascii=False)
+    os.replace(tmp, FILE)
 
 def obtener_pendientes_ordenados(tareas):
     pendientes = [(i, t) for i, t in enumerate(tareas, 1) if not t["completada"]]
@@ -267,8 +278,12 @@ def listar_tareas(tareas, tags):
         print(f"  {contador:>2} | {estado} {t['texto']:<30} {tiempo} {tag_str}")
 
 def marcar_completada(tareas, tags):
-    listar_tareas(tareas, tags)
     pendientes = obtener_pendientes_ordenados(tareas)
+    if not pendientes:
+        print("\n  No hay tareas pendientes para marcar como completadas.")
+        return
+
+    listar_tareas(tareas, tags)
 
     try:
         idx = int(input("\n  Número de tarea: "))
@@ -289,8 +304,12 @@ def eliminar_tarea(tareas, tags):
         print("\n  No hay tareas para eliminar.")
         return
 
-    listar_tareas(tareas, tags)
     pendientes = obtener_pendientes_ordenados(tareas)
+    if not pendientes:
+        print("\n  No hay tareas pendientes para eliminar.")
+        return
+
+    listar_tareas(tareas, tags)
 
     entrada = input("\n  Selecciona tareas a eliminar (ej: 1 3 5): ").split()
 
@@ -300,21 +319,25 @@ def eliminar_tarea(tareas, tags):
         print("  Debes introducir solo números.")
         return
 
+    indices_validos = []
+    for n in numeros:
+        if 1 <= n <= len(pendientes):
+            idx_real = pendientes[n - 1][0]
+            if idx_real not in indices_validos:
+                indices_validos.append(idx_real)
+
+    if not indices_validos:
+        print(Fore.RED + "  No hay números válidos seleccionados." + Style.RESET_ALL)
+        return
+
     confirmacion = input("  ¿Seguro que quieres eliminar estas tareas? (s/n): ").lower()
     if confirmacion != "s":
         print("  Operación cancelada.")
         return
 
-    indices_a_borrar = []
-    for n in numeros:
-        if 1 <= n <= len(pendientes):
-            indices_a_borrar.append(pendientes[n - 1][0])
-        else:
-            print(Fore.RED + f"  Número {n} fuera de rango" + Style.RESET_ALL)
+    indices_validos.sort(reverse=True)
 
-    indices_a_borrar.sort(reverse=True)
-
-    for indice_real in indices_a_borrar:
+    for indice_real in indices_validos:
         tareas.pop(indice_real - 1)
 
     guardar_tareas(tareas)
@@ -325,12 +348,13 @@ def editar_tarea(tareas, tags):
         print("\n  No hay tareas para editar.")
         return
 
-    listar_tareas(tareas, tags)
     pendientes = obtener_pendientes_ordenados(tareas)
 
     if not pendientes:
         print(Fore.RED + "  No hay tareas pendientes para editar." + Style.RESET_ALL)
         return
+
+    listar_tareas(tareas, tags)
 
     try:
         idx = int(input("\n  Número de tarea a editar: "))
