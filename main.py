@@ -22,8 +22,6 @@ COLORES_DISPONIBLES = {
     "blanco": Fore.WHITE,
 }
 
-from database import crear_db
-
 # ─── ASCII Art ────────────────────────────────────────────────────────────────
 
 ASCII_CHECK = [
@@ -380,7 +378,6 @@ def buscar_tarea(tareas):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    crear_db()
     tareas = cargar_tareas()
     tags   = cargar_tags()
 
