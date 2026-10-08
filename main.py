@@ -364,15 +364,26 @@ def editar_tarea(tareas, tags):
 
         indice_real, tarea = pendientes[idx - 1]
         print(f"  Texto actual: {tarea['texto']}")
-        nuevo_texto = input("  Nuevo texto: ").strip()
+        nuevo_texto = input("  Nuevo texto (Enter para mantener): ").strip()
 
-        if not nuevo_texto:
-            print("  No puedes dejar la tarea vacía.")
-            return
+        if nuevo_texto:
+            tareas[indice_real - 1]["texto"] = nuevo_texto
 
-        tareas[indice_real - 1]["texto"] = nuevo_texto
+        if tags:
+            print("  Tags disponibles: ", end="")
+            for nombre, color in tags.items():
+                print(COLORES_DISPONIBLES[color] + nombre + Style.RESET_ALL, end="  ")
+            print()
+            entrada = input("  Nuevo tag (Enter para mantener, '-' para quitar): ").strip().lower()
+            if entrada == "-":
+                tareas[indice_real - 1]["tag"] = None
+            elif entrada and entrada in tags:
+                tareas[indice_real - 1]["tag"] = entrada
+            elif entrada:
+                print(Fore.RED + "  Tag no reconocido, se mantiene el tag actual." + Style.RESET_ALL)
+
         guardar_tareas(tareas)
-        print(Fore.GREEN + "  ✏️  Tarea actualizada." + Style.RESET_ALL)
+        print(Fore.GREEN + "  ✔ Tarea actualizada." + Style.RESET_ALL)
 
     except ValueError:
         print("  Debes introducir un número válido.")
