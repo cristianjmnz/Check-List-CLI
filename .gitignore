@@ -29,5 +29,6 @@ migrar.py
 # PyInstaller
 build/
 dist/
-*.spec 
-.venv/
+*.spec
+venv/
+.DS_Store
