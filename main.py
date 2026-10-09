@@ -1,17 +1,26 @@
 import sys
-sys.stdout.reconfigure(encoding='utf-8')
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 
 import json
 import os
+from datetime import datetime
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FILE = os.path.join(BASE_DIR, "tareas.json")
-FILE_TAGS = os.path.join(BASE_DIR, "tags.json")
+try:
+    from platformdirs import user_data_dir
+    DATA_DIR = Path(user_data_dir("Check-List-CLI", roaming=False))
+except Exception:
+    DATA_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
+
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+FILE = DATA_DIR / "tareas.json"
+FILE_TAGS = DATA_DIR / "tags.json"
 
 from colorama import init, Fore, Back, Style
 init()
-
-from datetime import datetime
 
 COLORES_DISPONIBLES = {
     "rojo": Fore.RED,
@@ -105,14 +114,40 @@ def cargar_tags():
         return {}
     try:
         with open(FILE_TAGS, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
+            data = json.load(f)
+    except (json.JSONDecodeError, UnicodeError, OSError):
+        try:
+            ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup = str(FILE_TAGS) + f".corrupt-{ts}"
+            os.replace(FILE_TAGS, backup)
+            print(Fore.RED + f"  Archivo tags corrupto. Se respaldó como {backup}" + Style.RESET_ALL)
+        except Exception:
+            pass
         return {}
+    if not isinstance(data, dict):
+        try:
+            ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup = str(FILE_TAGS) + f".corrupt-{ts}"
+            os.replace(FILE_TAGS, backup)
+            print(Fore.RED + f"  Archivo tags corrupto (formato inesperado). Se respaldó como {backup}" + Style.RESET_ALL)
+        except Exception:
+            pass
+        return {}
+    tags = {}
+    for k, v in data.items():
+        if isinstance(k, str) and isinstance(v, str) and v in COLORES_DISPONIBLES:
+            tags[k] = v
+    return tags
 
 def guardar_tags(tags):
-    tmp = FILE_TAGS + ".tmp"
+    tmp = str(FILE_TAGS) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(tags, f, indent=4, ensure_ascii=False)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
     os.replace(tmp, FILE_TAGS)
 
 def gestionar_tags(tags):
@@ -174,32 +209,42 @@ def gestionar_tags(tags):
 # ─── Utilidades ───────────────────────────────────────────────────────────────
 
 def limpiar_pantalla():
-    os.system("cls" if os.name == "nt" else "clear")
+    try:
+        os.system("cls" if os.name == "nt" else "clear")
+    except Exception:
+        pass
 
 def tiempo_relativo(fecha_str):
-    ahora = datetime.now()
-    fecha = datetime.fromisoformat(fecha_str)
-    diferencia = ahora - fecha
-
-    segundos = int(diferencia.total_seconds())
-    minutos = segundos // 60
-    horas = minutos // 60
-    dias = horas // 24
-    semanas = dias // 7
-    meses = dias // 30
-
-    if segundos < 60:
-        return "Hace un momento"
-    elif minutos < 60:
-        return f"Hace {minutos} minuto{'s' if minutos > 1 else ''}"
-    elif horas < 24:
-        return f"Hace {horas} hora{'s' if horas > 1 else ''}"
-    elif dias < 7:
-        return f"Hace {dias} dia{'s' if dias > 1 else ''}"
-    elif semanas < 4:
-        return f"Hace {semanas} semana{'s' if semanas > 1 else ''}"
-    else:
-        return f"Hace {meses} mes{'es' if meses > 1 else ''}"
+    try:
+        ahora = datetime.now()
+        fecha = datetime.fromisoformat(fecha_str.replace("Z", "+00:00").replace("+00:00", ""))
+        if fecha.tzinfo is not None:
+            fecha = fecha.replace(tzinfo=None)
+        diferencia = ahora - fecha
+        segundos = int(diferencia.total_seconds())
+        if segundos < 0:
+            return "En el futuro"
+        if segundos < 60:
+            return "Hace un momento"
+        minutos = segundos // 60
+        if minutos < 60:
+            return f"Hace {minutos} minuto{'s' if minutos > 1 else ''}"
+        horas = minutos // 60
+        if horas < 24:
+            return f"Hace {horas} hora{'s' if horas > 1 else ''}"
+        dias = horas // 24
+        if dias < 7:
+            return f"Hace {dias} dia{'s' if dias > 1 else ''}"
+        semanas = dias // 7
+        if semanas < 4:
+            return f"Hace {semanas} semana{'s' if semanas > 1 else ''}"
+        meses = dias // 30
+        if meses < 12:
+            return f"Hace {meses} mes{'es' if meses > 1 else ''}"
+        anos = dias // 365
+        return f"Hace {anos} año{'s' if anos > 1 else ''}"
+    except Exception:
+        return "(fecha inválida)"
 
 # ─── Tareas ───────────────────────────────────────────────────────────────────
 
@@ -208,14 +253,47 @@ def cargar_tareas():
         return []
     try:
         with open(FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
+            data = json.load(f)
+    except (json.JSONDecodeError, UnicodeError, OSError):
+        try:
+            ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup = str(FILE) + f".corrupt-{ts}"
+            os.replace(FILE, backup)
+            print(Fore.RED + f"  Archivo corrupto. Se respaldó como {backup}" + Style.RESET_ALL)
+        except Exception:
+            pass
         return []
+    if not isinstance(data, list):
+        try:
+            ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+            backup = str(FILE) + f".corrupt-{ts}"
+            os.replace(FILE, backup)
+            print(Fore.RED + f"  Archivo corrupto (formato inesperado). Se respaldó como {backup}" + Style.RESET_ALL)
+        except Exception:
+            pass
+        return []
+    tareas = []
+    for t in data:
+        if not isinstance(t, dict):
+            continue
+        tarea = {
+            "texto": t.get("texto", "") if isinstance(t.get("texto"), str) else str(t.get("texto", "")),
+            "completada": bool(t.get("completada", False)),
+            "fecha": t.get("fecha") if isinstance(t.get("fecha"), str) else None,
+            "tag": t.get("tag") if isinstance(t.get("tag"), str) else None,
+        }
+        tareas.append(tarea)
+    return tareas
 
 def guardar_tareas(tareas):
-    tmp = FILE + ".tmp"
+    tmp = str(FILE) + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(tareas, f, indent=4, ensure_ascii=False)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
     os.replace(tmp, FILE)
 
 def obtener_pendientes_ordenados(tareas):
@@ -272,7 +350,7 @@ def listar_tareas(tareas, tags):
 
         tag_str = ""
         if t.get("tag") and t["tag"] in tags:
-            color = COLORES_DISPONIBLES[tags[t["tag"]]]
+            color = COLORES_DISPONIBLES.get(tags[t["tag"]], "")
             tag_str = color + f"[{t['tag']}]" + Style.RESET_ALL
 
         print(f"  {contador:>2} | {estado} {t['texto']:<30} {tiempo} {tag_str}")
@@ -413,35 +491,49 @@ def buscar_tarea(tareas):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    tareas = cargar_tareas()
-    tags   = cargar_tags()
+    try:
+        tareas = cargar_tareas()
+        tags   = cargar_tags()
 
-    while True:
-        limpiar_pantalla()
-        pendientes = sum(1 for t in tareas if not t["completada"])
-        mostrar_menu()
-        print(Fore.CYAN + f"\n  📋 {pendientes} tarea(s) pendiente(s)\n" + Style.RESET_ALL)
-        opcion = input("  Selecciona una opción: ")
+        while True:
+            limpiar_pantalla()
+            pendientes = sum(1 for t in tareas if not t.get("completada", False))
+            mostrar_menu()
+            print(Fore.CYAN + f"\n  📋 {pendientes} tarea(s) pendiente(s)\n" + Style.RESET_ALL)
+            try:
+                opcion = input("  Selecciona una opción: ")
+            except (EOFError, KeyboardInterrupt):
+                print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
+                break
+            opcion = opcion.strip()
 
-        if opcion == "1":
-            añadir_tarea(tareas, tags)
-        elif opcion == "2":
-            listar_tareas(tareas, tags)
-        elif opcion == "3":
-            buscar_tarea(tareas)
-        elif opcion == "4":
-            marcar_completada(tareas, tags)
-        elif opcion == "5":
-            editar_tarea(tareas, tags)
-        elif opcion == "6":
-            eliminar_tarea(tareas, tags)
-        elif opcion == "7":
-            gestionar_tags(tags)
-        elif opcion == "0":
-            print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
-            break
+            if opcion == "1":
+                añadir_tarea(tareas, tags)
+            elif opcion == "2":
+                listar_tareas(tareas, tags)
+            elif opcion == "3":
+                buscar_tarea(tareas)
+            elif opcion == "4":
+                marcar_completada(tareas, tags)
+            elif opcion == "5":
+                editar_tarea(tareas, tags)
+            elif opcion == "6":
+                eliminar_tarea(tareas, tags)
+            elif opcion == "7":
+                gestionar_tags(tags)
+            elif opcion == "0":
+                print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
+                break
+            else:
+                print(Fore.RED + "  Opción no válida." + Style.RESET_ALL)
 
-        input(Fore.GREEN + "\n  Presiona Enter para continuar..." + Style.RESET_ALL)
+            try:
+                input(Fore.GREEN + "\n  Presiona Enter para continuar..." + Style.RESET_ALL)
+            except (EOFError, KeyboardInterrupt):
+                print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
+                break
+    except (KeyboardInterrupt, EOFError):
+        print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
 
 if __name__ == "__main__":
     main()
