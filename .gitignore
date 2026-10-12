@@ -22,6 +22,9 @@ __pycache__/
 tareas.json
 tags.json
 tareas.db
+config.json
+*.tmp
+*.corrupt-*
 
 # SCRIPTS PUNTUALES
 migrar.py
@@ -32,4 +35,3 @@ dist/
 *.spec
 venv/
 .DS_Store
-*.tmp
