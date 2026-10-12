@@ -34,4 +34,5 @@ build/
 dist/
 *.spec
 venv/
+*.egg-info/
 .DS_Store

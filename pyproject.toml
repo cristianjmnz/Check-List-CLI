@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "check-list-cli"
+version = "1.1.0"
+description = "Gestor de tareas de terminal con notificaciones ntfy."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "cristianjmnz" }]
+dependencies = [
+    "colorama>=0.4.6",
+    "platformdirs>=4.3.6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+checklist = "checklist.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["checklist*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["checklist.spec"]
+
+[tool.ruff.lint]
+# El proyecto captura excepciones amplias a propósito (robustez en CLI).
+ignore = ["BLE001", "S110"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
