@@ -1,6 +1,7 @@
 """Interfaz interactiva de terminal (menús, prompts y salida con color)."""
 
 import os
+import sqlite3
 
 from colorama import Fore, Style
 
@@ -407,17 +408,25 @@ def buscar_tarea(tareas):
         print("\n  No hay tareas guardadas.")
         return
 
+    numeros = {
+        real: mostrado
+        for mostrado, (real, _) in enumerate(
+            models.obtener_pendientes_ordenados(tareas), 1
+        )
+    }
+
     encontrado = False
 
-    for i, t in enumerate(tareas, 1):
-        if palabra in t["texto"].lower():
-            estado = (
-                Fore.GREEN + "✔" + Style.RESET_ALL
-                if t["completada"]
-                else Fore.YELLOW + "○" + Style.RESET_ALL
-            )
-            print(f"  {i}. [{estado}] {t['texto']}")
-            encontrado = True
+    for real, t in enumerate(tareas, 1):
+        if palabra not in t["texto"].lower():
+            continue
+        encontrado = True
+        if t["completada"]:
+            estado = Fore.GREEN + "✔" + Style.RESET_ALL
+            print(f"   ✔ [{estado}] {t['texto']}")
+        else:
+            estado = Fore.YELLOW + "○" + Style.RESET_ALL
+            print(f"  {numeros[real]:>2} [{estado}] {t['texto']}")
 
     if not encontrado:
         print(
@@ -496,7 +505,7 @@ def gestionar_notificaciones(tareas, tags):
         if opcion == "1":
             configurar_tema()
         elif opcion == "2":
-            if notify.enviar_pendientes(tareas, tags):
+            if notify.enviar_pendientes(tareas):
                 print(Fore.GREEN + "  ✔ Notificación enviada." + Style.RESET_ALL)
         elif opcion == "3":
             notify.instalar_recordatorio()
@@ -574,3 +583,9 @@ def menu_interactivo():
                 break
     except (KeyboardInterrupt, EOFError):
         print(Fore.GREEN + "\n  Hasta luego 👋\n" + Style.RESET_ALL)
+    except sqlite3.Error as exc:
+        print(
+            Fore.RED
+            + f"\n  Error al acceder a la base de datos: {exc}"
+            + Style.RESET_ALL
+        )

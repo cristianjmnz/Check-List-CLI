@@ -105,7 +105,7 @@ def construir_mensaje_pendientes(tareas):
     return "Check List", cuerpo, "memo", prioridad
 
 
-def enviar_pendientes(tareas, tags=None):
+def enviar_pendientes(tareas):
     titulo, cuerpo, ntfy_tags, prioridad = construir_mensaje_pendientes(tareas)
     topic, server = obtener_ntfy()
     action_url = f"{server.rstrip('/')}/{topic}" if topic else None

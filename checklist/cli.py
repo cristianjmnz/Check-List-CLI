@@ -1,6 +1,7 @@
 """Punto de entrada: subcomandos de línea de comandos y arranque del menú."""
 
 import argparse
+import sqlite3
 import sys
 
 from colorama import Fore, Style
@@ -104,17 +105,22 @@ def _cmd_rm(args):
 
 def _cmd_notify(args):
     tareas = storage.cargar_tareas()
-    tags = storage.cargar_tags()
-    return 0 if notify.enviar_pendientes(tareas, tags) else 1
+    return 0 if notify.enviar_pendientes(tareas) else 1
 
 
 def _cmd_topic(args):
-    if args.set:
+    if args.set is not None:
+        tema = args.set.strip()
+        if not tema:
+            print(
+                Fore.RED + "  El tema no puede estar vacío." + Style.RESET_ALL
+            )
+            return 1
         config = storage.cargar_config()
-        config["ntfy_topic"] = args.set.strip()
+        config["ntfy_topic"] = tema
         config.setdefault("ntfy_server", paths.NTFY_SERVER_DEFAULT)
         storage.guardar_config(config)
-        print(Fore.GREEN + f"✔ Tema ntfy guardado: {args.set.strip()}" + Style.RESET_ALL)
+        print(Fore.GREEN + f"✔ Tema ntfy guardado: {tema}" + Style.RESET_ALL)
         return 0
 
     topic, server = notify.obtener_ntfy()
@@ -196,18 +202,26 @@ def main(argv=None):
     parser = _construir_parser()
     args = parser.parse_args(argv)
 
-    if args.set_topic:
-        return _cmd_topic(argparse.Namespace(set=args.set_topic))
+    try:
+        if args.set_topic is not None:
+            return _cmd_topic(argparse.Namespace(set=args.set_topic))
 
-    if args.notify_pendientes:
-        return _cmd_notify(args)
+        if args.notify_pendientes:
+            return _cmd_notify(args)
 
-    if getattr(args, "func", None) is not None:
-        codigo = args.func(args)
-        return 0 if codigo is None else codigo
+        if getattr(args, "func", None) is not None:
+            codigo = args.func(args)
+            return 0 if codigo is None else codigo
 
-    ui.menu_interactivo()
-    return 0
+        ui.menu_interactivo()
+        return 0
+    except sqlite3.Error as exc:
+        print(
+            Fore.RED
+            + f"  Error al acceder a la base de datos: {exc}"
+            + Style.RESET_ALL
+        )
+        return 1
 
 
 if __name__ == "__main__":

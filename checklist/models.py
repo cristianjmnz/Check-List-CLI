@@ -22,13 +22,17 @@ def normalizar_tarea(t):
     texto = t.get("texto", "")
     if not isinstance(texto, str):
         texto = str(texto)
-    return {
+    tarea = {
         "texto": texto,
         "completada": bool(t.get("completada", False)),
         "fecha": t.get("fecha") if isinstance(t.get("fecha"), str) else None,
         "tag": t.get("tag") if isinstance(t.get("tag"), str) else None,
         "prioridad": normalizar_prioridad(t.get("prioridad")),
     }
+    identificador = t.get("id")
+    if isinstance(identificador, int) and identificador >= 1:
+        tarea["id"] = identificador
+    return tarea
 
 
 def normalizar_tags(data, colores_validos):

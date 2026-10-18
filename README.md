@@ -31,7 +31,7 @@ Gestor de tareas en línea de comandos hecho con Python. Ligero, rápido y sin d
 - **Eliminar tareas** — elimina una o varias tareas a la vez con confirmación
 - **Gestionar tags** — ver, crear y eliminar tags
 - **Notificaciones ntfy** — recibe tus tareas pendientes en el móvil
-- **Persistencia** — las tareas se guardan en un archivo JSON local
+- **Persistencia** — los datos se guardan en una base de datos SQLite local (`tareas.db`)
 - **Interfaz con colores** — gracias a `colorama`
 
 ---
@@ -124,39 +124,14 @@ python main.py --notify-pendientes       # equivalente a: notify
 ### Privacidad
 El texto de tus tareas se envía a los servidores de ntfy.sh. El tema es el único
 secreto: usa uno difícil de adivinar. Si te preocupa la privacidad, puedes
-auto-alojar tu propio servidor ntfy y cambiarlo en `config.json` (`ntfy_server`).
+auto-alojar tu propio servidor ntfy y cambiarlo con
+`python main.py topic --set MI_TEMA` (o editando la tabla `config` de `tareas.db`).
 
 ---
-### ⚠️ macOS — Primer uso
-
-Apple bloqueará la app por no estar firmada. Para solucionarlo:
-
-1. Descarga el archivo `checklist` desde Releases
-2. Abre la terminal y ejecuta:
-
-```bash
-xattr -d com.apple.quarantine ~/Downloads/checklist
-chmod +x ~/Downloads/checklist
-```
-
-3. Muévelo para usarlo desde cualquier lugar (opcional):
-
-```bash
-sudo cp ~/Downloads/checklist /usr/local/bin/checklist
-```
-
-Ya puedes escribir `checklist` en cualquier terminal.
-
 
 ## 🚀 Instalación y uso en Windows
 
-### Opción 1 — Ejecutable directo (recomendado)
-
-Descarga el `.exe` desde la sección [Releases](../../releases) y ejecútalo. No necesitas instalar Python.
-
-### Opción 2 — Desde el código fuente
-
-**Requisitos:** Python 3.8 o superior
+**Requisitos:** Python 3.9 o superior
 
 ```bash
 # 1. Clona el repositorio
@@ -164,28 +139,25 @@ git clone https://github.com/cristianjmnz/Check-List-CLI.git
 cd Check-List-CLI
 
 # 2. Instala las dependencias
-pip install -r requirements.txt
+pip install -e .
 
 # 3. Ejecuta el programa
 python main.py
 ```
 
+> 💡 Con el paquete instalado también está disponible el comando `checklist`.
+
 ---
 
 ## 📦 Dependencias
 
+Declaradas en `pyproject.toml`:
 ```
 colorama
 platformdirs
 ```
 
-Instálalas con:
-
-```bash
-pip install -r requirements.txt
-```
-
-o desarrolla con el paquete instalado en modo editable:
+Instálalas (modo editable, con herramientas de desarrollo):
 
 ```bash
 pip install -e ".[dev]"
@@ -202,18 +174,21 @@ Check-List-CLI/
 │   ├── cli.py            # Subcomandos de línea de comandos
 │   ├── ui.py             # Menú interactivo y salida con color
 │   ├── models.py         # Lógica pura (orden, normalización, tiempo relativo)
-│   ├── storage.py        # Persistencia JSON (atómica y con respaldo)
+│   ├── storage.py        # Persistencia SQLite (transacciones y migración)
 │   ├── notify.py         # Notificaciones ntfy + recordatorio launchd
 │   └── paths.py          # Rutas de datos y constantes
 ├── tests/                # Pruebas (pytest)
 ├── pyproject.toml        # Metadatos, script `checklist`, config ruff/pytest
-├── tareas.json           # Generado automáticamente al añadir tareas
-├── tags.json             # Generado automáticamente al crear el 1º tag
-├── config.json           # Generado al configurar ntfy (no se sube al repo)
-├── requirements.txt      # Dependencias del proyecto
 ├── .github/workflows/ci.yml  # CI: ruff + pytest (Python 3.9–3.13)
 └── .gitignore
 ```
+
+### 💾 Persistencia
+
+Todo se guarda en un único archivo `tareas.db` (SQLite, de la stdlib de Python,
+sin dependencias extra). La primera vez, si había `tareas.json`/`tags.json`/
+`config.json` en el directorio, se importaron automáticamente a la base y los
+JSON ya no se usan.
 
 ---
 
@@ -229,14 +204,14 @@ ruff check .
 
 La funcionalidad no interactiva (subcomandos) está cubierta por tests; el menú
 interactivo se prueba manualmente. Los datos están aislados en las pruebas
-(`tmp_path`), nunca se tocan tus `tareas.json`/`config.json` reales.
+(`tmp_path`), nunca se toca tu `tareas.db` real.
 
 ---
 
 ## 🛠️ Tecnologías
 
 - **Python 3** — lenguaje principal
-- **JSON** — almacenamiento local de tareas
+- **SQLite** — almacenamiento local de tareas (`sqlite3` de la stdlib)
 - **colorama** — colores en la terminal multiplataforma
 - **ntfy** — notificaciones push al móvil (vía `urllib` de la stdlib)
 

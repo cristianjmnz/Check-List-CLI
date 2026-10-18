@@ -13,21 +13,17 @@
 # PYTHON
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 
 # IDEs
 .idea/
 .vscode/
 
 # DATOS LOCALES
-tareas.json
-tags.json
 tareas.db
-config.json
 *.tmp
 *.corrupt-*
-
-# SCRIPTS PUNTUALES
-migrar.py
 
 # PyInstaller
 build/

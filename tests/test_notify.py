@@ -27,14 +27,11 @@ def sin_topic(monkeypatch):
 
 @pytest.fixture
 def con_topic(monkeypatch, tmp_path):
-    import json
-
     monkeypatch.delenv("NTFY_TOPIC", raising=False)
     monkeypatch.delenv("NTFY_SERVER", raising=False)
-    monkeypatch.setattr(paths, "FILE_CONFIG", tmp_path / "config.json")
-    (tmp_path / "config.json").write_text(
-        json.dumps({"ntfy_topic": "prueba-topic", "ntfy_server": "https://ntfy.sh"}),
-        encoding="utf-8",
+    monkeypatch.setattr(paths, "DB", tmp_path / "tareas.db")
+    notify.storage.guardar_config(
+        {"ntfy_topic": "prueba-topic", "ntfy_server": "https://ntfy.sh"}
     )
     return "prueba-topic"
 

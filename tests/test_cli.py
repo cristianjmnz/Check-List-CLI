@@ -1,25 +1,16 @@
 import json
+import re
 
 import pytest
 
-from checklist import cli, paths, storage
+from checklist import cli, paths, storage, ui
 
 
 @pytest.fixture
 def data_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(paths, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(paths, "FILE", tmp_path / "tareas.json")
-    monkeypatch.setattr(paths, "FILE_TAGS", tmp_path / "tags.json")
-    monkeypatch.setattr(paths, "FILE_CONFIG", tmp_path / "config.json")
+    monkeypatch.setattr(paths, "DB", tmp_path / "tareas.db")
     return tmp_path
-
-
-@pytest.fixture
-def tareas_csv(data_dir):
-    data_dir.joinpath("tags.json").write_text(
-        json.dumps({"personal": "verde"}), encoding="utf-8"
-    )
-    return data_dir / "tareas.json"
 
 
 def test_add_crea_tarea(data_dir, capsys):
@@ -110,6 +101,36 @@ def test_legacy_set_topic(data_dir):
 def test_menu_por_defecto_sin_comandos_termina_con_eof(data_dir, monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda *a: (_ for _ in ()).throw(EOFError()))
     assert cli.main([]) == 0
+
+
+def test_topic_set_vacio_rechazado(data_dir, capsys):
+    assert cli.main(["topic", "--set", "   "]) == 1
+    assert "vac" in capsys.readouterr().out.lower()
+    assert "ntfy_topic" not in storage.cargar_config()
+
+
+def test_buscar_tarea_usa_numeracion_de_pendientes(data_dir, monkeypatch, capsys):
+    cli.main(["add", "primera tarea"])
+    cli.main(["add", "segunda tarea"])
+    tareas = storage.cargar_tareas()
+
+    monkeypatch.setattr("builtins.input", lambda *a: "tarea")
+    ui.buscar_tarea(tareas)
+
+    limpio = re.sub(r"\x1b\[[0-9;]*m", "", capsys.readouterr().out)
+    assert "1 [○] segunda tarea" in limpio
+    assert "2 [○] primera tarea" in limpio
+
+
+def test_error_bd_muestra_mensaje_amable(data_dir, monkeypatch, capsys):
+    import sqlite3
+
+    def boom():
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(storage, "cargar_tareas", boom)
+    assert cli.main(["list"]) == 1
+    assert "Error al acceder a la base de datos" in capsys.readouterr().out
 
 
 def test_imprimir_tarea_usa_tag(data_dir, capsys):

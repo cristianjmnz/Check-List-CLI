@@ -24,9 +24,7 @@ def _resolver_data_dir():
 DATA_DIR = _resolver_data_dir()
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-FILE = DATA_DIR / "tareas.json"
-FILE_TAGS = DATA_DIR / "tags.json"
-FILE_CONFIG = DATA_DIR / "config.json"
+DB = DATA_DIR / "tareas.db"
 
 NTFY_SERVER_DEFAULT = "https://ntfy.sh"
 NTFY_LIMITE_BYTES = 3900
