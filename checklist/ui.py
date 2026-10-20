@@ -544,10 +544,10 @@ def gestionar_notificaciones(tareas, tags):
 def menu_interactivo():
     try:
         sync.procesar_comandos(silencioso=True)
-        tareas = storage.cargar_tareas()
-        tags = storage.cargar_tags()
 
         while True:
+            tareas = storage.cargar_tareas()
+            tags = storage.cargar_tags()
             limpiar_pantalla()
             pendientes = sum(1 for t in tareas if not t.get("completada", False))
             mostrar_menu()

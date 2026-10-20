@@ -153,6 +153,36 @@ def test_usa_ultimo_id_como_since(db, monkeypatch):
     assert "since=abc" in capturado["url"]
 
 
+def test_silencioso_reporta_completadas(db, monkeypatch, capsys):
+    _config()
+    tarea_id = _tarea_id()
+
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda url, timeout=None, context=None: _respuesta(
+            [_mensaje(f"done:{tarea_id}:tok123")]
+        ),
+    )
+
+    assert sync.procesar_comandos(silencioso=True) == 1
+    assert "completada" in capsys.readouterr().out
+
+
+def test_silencioso_calla_si_no_hay_comandos(db, monkeypatch, capsys):
+    _config()
+    _tarea_id()
+
+    monkeypatch.setattr(
+        urllib.request,
+        "urlopen",
+        lambda url, timeout=None, context=None: _respuesta([]),
+    )
+
+    assert sync.procesar_comandos(silencioso=True) == 0
+    assert capsys.readouterr().out == ""
+
+
 def test_error_de_red_no_revienta(db, monkeypatch, capsys):
     _config()
 

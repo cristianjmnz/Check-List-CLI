@@ -100,13 +100,12 @@ def procesar_comandos(silencioso=False):
     if ultimo:
         storage.actualizar_config({"ntfy_last_id": ultimo})
 
-    if not silencioso:
-        if aplicadas:
-            print(
-                Fore.GREEN
-                + f"  ✔ {aplicadas} tarea(s) completada(s) desde el móvil."
-                + Style.RESET_ALL
-            )
-        else:
-            print("  No hay tareas nuevas completadas desde el móvil.")
+    if aplicadas:
+        print(
+            Fore.GREEN
+            + f"  ✔ {aplicadas} tarea(s) completada(s) desde el móvil."
+            + Style.RESET_ALL
+        )
+    elif not silencioso:
+        print("  No hay tareas nuevas completadas desde el móvil.")
     return aplicadas

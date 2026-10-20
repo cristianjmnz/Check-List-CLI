@@ -71,11 +71,18 @@ las demás tareas se completan desde el menú o con `python main.py done N`.
 
 Los comandos se aplican cuando vuelves a usar el CLI: al abrir el menú, al
 ejecutar `list`, `done`, `rm` o `notify`, o al usar `8. Notificaciones` →
-`5. Sincronizar completadas desde el móvil`. También puedes forzarlo con:
+`5. Sincronizar completadas desde el móvil`. Cuando se aplica alguna verás un
+mensaje `✔ N tarea(s) completada(s) desde el móvil`. También puedes forzarlo con:
 
 ```bash
 python main.py sync
 ```
+
+> ⚠️ Pulsar un botón **no** cambia la lista al instante: el comando se guarda en
+> ntfy y se aplica la próxima vez que abras el CLI. Además, en iOS la
+> notificación **no desaparece** al pulsar (limitación de la app de ntfy), así
+> que verás los botones aunque el comando ya se haya enviado. Ejecuta
+> `python main.py sync` (o abre el menú) para comprobar que se aplicó.
 
 Así funciona aunque el Mac estuviera apagado o dormido: ntfy guarda los
 comandos y se procesan la próxima vez que arranques el CLI. ntfy.sh conserva
