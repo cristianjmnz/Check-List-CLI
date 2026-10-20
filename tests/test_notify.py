@@ -90,10 +90,101 @@ def test_enviar_pendientes_incluye_prioridad(con_topic, monkeypatch):
         return _FakeResp(200)
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
-    tareas = [models.crear_tarea("urgente", prioridad="alta")]
+    notify.storage.guardar_tareas(
+        [models.crear_tarea("urgente", prioridad="alta")]
+    )
+    tareas = notify.storage.cargar_tareas()
+    tarea_id = tareas[0]["id"]
+
     assert notify.enviar_pendientes(tareas) is True
     assert capturado["priority"] == "high"
-    assert "Abrir" in capturado["actions"]
+
+    import json
+
+    acciones = json.loads(capturado["actions"])
+    assert len(acciones) == 1
+    assert acciones[0]["label"] == "✔ Completar 1"
+    assert acciones[0]["action"] == "http"
+    assert acciones[0]["clear"] is False
+    assert acciones[0]["body"].startswith(f"done:{tarea_id}:")
+
+
+def test_enviar_pendientes_limita_a_tres_botones(con_topic, monkeypatch):
+    capturado = {}
+
+    def fake_urlopen(req, timeout, context):
+        capturado["actions"] = req.headers.get("Actions")
+        return _FakeResp(200)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    notify.storage.guardar_tareas(
+        [models.crear_tarea(f"tarea {i}") for i in range(5)]
+    )
+
+    assert notify.enviar_pendientes(notify.storage.cargar_tareas()) is True
+
+    import json
+
+    acciones = json.loads(capturado["actions"])
+    assert len(acciones) == 3
+    assert [a["label"] for a in acciones] == [
+        "✔ Completar 1",
+        "✔ Completar 2",
+        "✔ Completar 3",
+    ]
+
+
+def test_enviar_pendientes_sin_pendientes_no_pone_acciones(con_topic, monkeypatch):
+    capturado = {}
+
+    def fake_urlopen(req, timeout, context):
+        capturado["actions"] = req.headers.get("Actions")
+        return _FakeResp(200)
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    assert notify.enviar_pendientes([]) is True
+    assert capturado["actions"] is None
+
+
+def test_obtener_comandos_genera_y_persiste(con_topic):
+    server, cmd_topic, token = notify.obtener_comandos()
+    config = notify.storage.cargar_config()
+
+    assert server == "https://ntfy.sh"
+    assert cmd_topic.startswith("checklist-cmd-")
+    assert config["ntfy_cmd_topic"] == cmd_topic
+    assert config["ntfy_cmd_token"] == token
+    assert config["ntfy_topic"] == con_topic
+
+    assert notify.obtener_comandos() == (server, cmd_topic, token)
+
+
+def test_flujo_completo_boton_completa_tarea(con_topic, monkeypatch):
+    import io
+    import json
+
+    from checklist import sync
+
+    notify.storage.guardar_tareas([models.crear_tarea("comprar pan")])
+    tareas = notify.storage.cargar_tareas()
+    capturado = {}
+
+    def fake_urlopen(objeto, timeout=None, context=None):
+        if isinstance(objeto, urllib.request.Request):
+            capturado["actions"] = json.loads(objeto.headers["Actions"])
+            return _FakeResp(200)
+        mensaje = {
+            "id": "m1",
+            "event": "message",
+            "message": capturado["actions"][0]["body"],
+        }
+        return io.BytesIO((json.dumps(mensaje) + "\n").encode("utf-8"))
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    assert notify.enviar_pendientes(tareas) is True
+    assert sync.procesar_comandos() == 1
+    assert notify.storage.cargar_tareas()[0]["completada"] is True
 
 
 def test_hora_recordatorio_defecto(sin_topic):
@@ -137,7 +228,7 @@ def test_construir_mensaje_con_pendientes():
     assert tags == "memo"
     assert prioridad == "default"
     assert "Tienes 1 tarea pendiente" in cuerpo
-    assert "• uno [personal]" in cuerpo
+    assert "1. uno [personal]" in cuerpo
 
 
 def test_construir_mensaje_sin_pendientes():

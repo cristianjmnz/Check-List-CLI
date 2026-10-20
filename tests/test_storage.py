@@ -168,3 +168,16 @@ def test_cargar_config_ignora_hora_invalida(db_path):
 
 def test_cargar_config_sin_archivo(db_path):
     assert storage.cargar_config(db_path) == {}
+
+
+def test_actualizar_config_conserva_otras_claves(db_path):
+    storage.guardar_config(
+        {"ntfy_topic": "abc", "recordatorio_hora": "09:00"}, db_path
+    )
+    storage.actualizar_config({"ntfy_last_id": "xyz"}, db_path)
+    assert storage.cargar_config(db_path) == {
+        "ntfy_topic": "abc",
+        "recordatorio_hora": "09:00",
+        "ntfy_last_id": "xyz",
+    }
+

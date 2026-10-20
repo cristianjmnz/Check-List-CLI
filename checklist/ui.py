@@ -5,7 +5,7 @@ import sqlite3
 
 from colorama import Fore, Style
 
-from . import models, notify, paths, storage
+from . import models, notify, paths, storage, sync
 
 COLORES_DISPONIBLES = paths.COLORES_DISPONIBLES
 
@@ -463,12 +463,14 @@ def configurar_tema():
         print(f"  Tema actual: {Fore.CYAN}{topic}{Style.RESET_ALL}")
         respuesta = input("  ¿Generar uno nuevo? (s/n): ").strip().lower()
         if respuesta != "s":
+            notify.obtener_comandos()
             mostrar_instrucciones_ntfy(topic, server)
             return
 
     nuevo = notify.generar_tema()
     config["ntfy_topic"] = nuevo
     storage.guardar_config(config)
+    notify.obtener_comandos()
     print(Fore.GREEN + f"\n  ✔ Tema generado: {nuevo}" + Style.RESET_ALL)
     mostrar_instrucciones_ntfy(nuevo, server)
 
@@ -498,6 +500,13 @@ def gestionar_notificaciones(tareas, tags):
             + Style.RESET_ALL
             + f" Hora del recordatorio ({notify.hora_recordatorio()})"
         )
+        print(
+            "  "
+            + Fore.CYAN
+            + "5."
+            + Style.RESET_ALL
+            + " Sincronizar completadas desde el móvil"
+        )
         print("  " + Fore.CYAN + "0." + Style.RESET_ALL + " Volver")
 
         opcion = input("\n  Selecciona una opción: ").strip()
@@ -522,6 +531,9 @@ def gestionar_notificaciones(tareas, tags):
             config["recordatorio_hora"] = hora
             storage.guardar_config(config)
             print(Fore.GREEN + f"  ✔ Recordatorio a las {hora}." + Style.RESET_ALL)
+        elif opcion == "5":
+            sync.procesar_comandos()
+            tareas[:] = storage.cargar_tareas()
         elif opcion == "0":
             break
 
@@ -531,6 +543,7 @@ def gestionar_notificaciones(tareas, tags):
 
 def menu_interactivo():
     try:
+        sync.procesar_comandos(silencioso=True)
         tareas = storage.cargar_tareas()
         tags = storage.cargar_tags()
 

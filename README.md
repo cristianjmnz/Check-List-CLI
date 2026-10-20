@@ -58,8 +58,32 @@ contraseña: guarda el que se te muestre.
 En `8. Notificaciones` → `2. Enviar pendientes al móvil`. Recibirás la lista de
 tareas pendientes (o `Todo al día 🎉` si no tienes ninguna). Las tareas con
 prioridad **alta** aparecen marcadas con ⚠ y la notificación llega con prioridad
-**high** (salta a pantalla completa en el móvil). La notificación incluye un
-botón **Abrir** con el enlace a tu tema.
+**high** (salta a pantalla completa en el móvil).
+
+### 4. Completa tareas desde el móvil
+El resumen incluye hasta **3 botones** (`✔ Completar 1`, `✔ Completar 2`,
+`✔ Completar 3`) para las 3 primeras tareas pendientes. Al pulsarlos se envía un
+comando a un tema privado de ntfy; no hace falta abrir la app.
+
+En iOS puede que tengas que **expandir la notificación** (mantener pulsada o
+deslizar hacia abajo) para ver los botones. El límite de 3 botones es de ntfy;
+las demás tareas se completan desde el menú o con `python main.py done N`.
+
+Los comandos se aplican cuando vuelves a usar el CLI: al abrir el menú, al
+ejecutar `list`, `done`, `rm` o `notify`, o al usar `8. Notificaciones` →
+`5. Sincronizar completadas desde el móvil`. También puedes forzarlo con:
+
+```bash
+python main.py sync
+```
+
+Así funciona aunque el Mac estuviera apagado o dormido: ntfy guarda los
+comandos y se procesan la próxima vez que arranques el CLI. ntfy.sh conserva
+los mensajes unas 12 horas.
+
+> 🔒 El canal de comandos usa un tema y un token aleatorios distintos del tema
+> principal. Se guardan en `tareas.db` y se generan automáticamente la primera
+> vez que envías un resumen.
 
 ### Prioridad de las tareas
 Cada tarea tiene una prioridad (`alta`, `media` o `baja`):
@@ -105,6 +129,7 @@ python main.py list --all                           # incluye las completadas
 python main.py done 2                               # marca la pendiente nº 2
 python main.py rm 1                                 # elimina la pendiente nº 1
 python main.py notify                               # envía los pendientes al móvil
+python main.py sync                                 # aplica completadas desde el móvil
 python main.py topic                                # muestra el tema ntfy actual
 python main.py topic --set MI_TEMA                  # fija el tema sin entrar al menú
 python main.py reminder                             # muestra la hora del recordatorio
@@ -176,6 +201,7 @@ Check-List-CLI/
 │   ├── models.py         # Lógica pura (orden, normalización, tiempo relativo)
 │   ├── storage.py        # Persistencia SQLite (transacciones y migración)
 │   ├── notify.py         # Notificaciones ntfy + recordatorio launchd
+│   ├── sync.py           # Aplica completadas enviadas desde el móvil
 │   └── paths.py          # Rutas de datos y constantes
 ├── tests/                # Pruebas (pytest)
 ├── pyproject.toml        # Metadatos, script `checklist`, config ruff/pytest

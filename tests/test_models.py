@@ -59,6 +59,24 @@ def test_normalizar_config():
     }
 
 
+def test_normalizar_config_comandos():
+    data = {
+        "ntfy_cmd_topic": " cmd-abc ",
+        "ntfy_cmd_token": "tok",
+        "ntfy_last_id": "abc123",
+    }
+    assert models.normalizar_config(data) == {
+        "ntfy_cmd_topic": "cmd-abc",
+        "ntfy_cmd_token": "tok",
+        "ntfy_last_id": "abc123",
+    }
+
+
+def test_normalizar_config_descarta_comandos_vacios():
+    data = {"ntfy_cmd_topic": "  ", "ntfy_cmd_token": "", "ntfy_last_id": None}
+    assert models.normalizar_config(data) == {}
+
+
 def test_normalizar_config_con_hora_valida():
     assert models.normalizar_config({"recordatorio_hora": "9:05"})["recordatorio_hora"] == "09:05"
 

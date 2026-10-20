@@ -6,7 +6,11 @@ import sys
 
 from colorama import Fore, Style
 
-from . import models, notify, paths, storage, ui
+from . import models, notify, paths, storage, sync, ui
+
+
+def _sincronizar_silencioso():
+    sync.procesar_comandos(silencioso=True)
 
 
 def _reconfigurar_stdout():
@@ -61,6 +65,7 @@ def _cmd_reminder(args):
 
 
 def _cmd_list(args):
+    _sincronizar_silencioso()
     tareas = storage.cargar_tareas()
     tags = storage.cargar_tags()
     pendientes = models.obtener_pendientes_ordenados(tareas)
@@ -80,6 +85,7 @@ def _cmd_list(args):
 
 
 def _cmd_done(args):
+    _sincronizar_silencioso()
     tareas = storage.cargar_tareas()
     indice_real = models.indice_real_de_pendiente(tareas, args.numero)
     if indice_real is None:
@@ -92,6 +98,7 @@ def _cmd_done(args):
 
 
 def _cmd_rm(args):
+    _sincronizar_silencioso()
     tareas = storage.cargar_tareas()
     indice_real = models.indice_real_de_pendiente(tareas, args.numero)
     if indice_real is None:
@@ -104,8 +111,14 @@ def _cmd_rm(args):
 
 
 def _cmd_notify(args):
+    _sincronizar_silencioso()
     tareas = storage.cargar_tareas()
     return 0 if notify.enviar_pendientes(tareas) else 1
+
+
+def _cmd_sync(args):
+    sync.procesar_comandos()
+    return 0
 
 
 def _cmd_topic(args):
@@ -178,6 +191,11 @@ def _construir_parser():
 
     p_notify = sub.add_parser("notify", help="Envía las tareas pendientes por ntfy.")
     p_notify.set_defaults(func=_cmd_notify)
+
+    p_sync = sub.add_parser(
+        "sync", help="Aplica las tareas completadas desde el móvil."
+    )
+    p_sync.set_defaults(func=_cmd_sync)
 
     p_topic = sub.add_parser("topic", help="Muestra o fija el tema ntfy.")
     p_topic.add_argument("--set", metavar="TEMA", help="Fija el tema ntfy.")

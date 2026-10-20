@@ -55,6 +55,10 @@ def normalizar_config(data):
         cfg["ntfy_topic"] = data["ntfy_topic"]
     if isinstance(data.get("ntfy_server"), str):
         cfg["ntfy_server"] = data["ntfy_server"]
+    for clave in ("ntfy_cmd_topic", "ntfy_cmd_token", "ntfy_last_id"):
+        valor = data.get(clave)
+        if isinstance(valor, str) and valor.strip():
+            cfg[clave] = valor.strip()
     hora = normalizar_hora(data.get("recordatorio_hora"))
     if hora:
         cfg["recordatorio_hora"] = hora

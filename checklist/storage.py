@@ -63,7 +63,7 @@ def _respaldar_corrupto(path, etiqueta):
 
 
 def _conectar(db_path):
-    conn = sqlite3.connect(str(db_path))
+    conn = sqlite3.connect(str(db_path), timeout=10)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -293,6 +293,20 @@ def guardar_config(config, db_path=None):
     def operacion(conn):
         conn.execute("DELETE FROM config")
         for clave, valor in config.items():
+            conn.execute(
+                "INSERT OR REPLACE INTO config (clave, valor) VALUES (?,?)",
+                (clave, str(valor)),
+            )
+
+    _escribir(db_path, operacion)
+
+
+def actualizar_config(cambios, db_path=None):
+    """Inserta o actualiza solo las claves indicadas, sin tocar las demás."""
+    db_path = paths.DB if db_path is None else Path(db_path)
+
+    def operacion(conn):
+        for clave, valor in cambios.items():
             conn.execute(
                 "INSERT OR REPLACE INTO config (clave, valor) VALUES (?,?)",
                 (clave, str(valor)),

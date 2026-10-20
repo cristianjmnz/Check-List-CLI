@@ -31,6 +31,31 @@ def generar_tema():
     return "checklist-" + secrets.token_hex(4)
 
 
+def obtener_comandos():
+    """Devuelve (server, tema, token) del canal de comandos, creándolo si falta."""
+    config = storage.cargar_config()
+    server = (
+        os.environ.get("NTFY_SERVER")
+        or config.get("ntfy_server")
+        or paths.NTFY_SERVER_DEFAULT
+    ).strip()
+    cmd_topic = config.get("ntfy_cmd_topic") or ""
+    token = config.get("ntfy_cmd_token") or ""
+
+    cambios = {}
+    if not cmd_topic:
+        cmd_topic = "checklist-cmd-" + secrets.token_hex(8)
+        cambios["ntfy_cmd_topic"] = cmd_topic
+    if not token:
+        token = secrets.token_urlsafe(24)
+        cambios["ntfy_cmd_token"] = token
+    if cambios:
+        cambios.setdefault("ntfy_server", server)
+        storage.actualizar_config(cambios)
+
+    return server, cmd_topic, token
+
+
 def _header_seguro(valor):
     return valor.encode("latin-1", errors="ignore").decode("latin-1")
 
@@ -41,7 +66,9 @@ def hora_recordatorio():
     return models.normalizar_hora(config.get("recordatorio_hora")) or _HORA_DEFECTO
 
 
-def enviar_notificacion(titulo, mensaje, tags="memo", prioridad=None, action_url=None):
+def enviar_notificacion(
+    titulo, mensaje, tags="memo", prioridad=None, acciones=None, action_url=None
+):
     topic, server = obtener_ntfy()
     if not topic:
         print(
@@ -58,10 +85,9 @@ def enviar_notificacion(titulo, mensaje, tags="memo", prioridad=None, action_url
         req.add_header("Tags", _header_seguro(tags))
     if prioridad and prioridad != "default":
         req.add_header("Priority", _header_seguro(prioridad))
-    if action_url:
-        acciones = [
-            {"action": "view", "label": "Abrir", "url": action_url}
-        ]
+    if acciones is None and action_url:
+        acciones = [{"action": "view", "label": "Abrir", "url": action_url}]
+    if acciones:
         req.add_header("Actions", _header_seguro(json.dumps(acciones)))
 
     try:
@@ -85,13 +111,13 @@ def construir_mensaje_pendientes(tareas):
         f"Tienes {n} tarea{'s' if n > 1 else ''} pendiente{'s' if n > 1 else ''}:",
         "",
     ]
-    for _, t in pendientes:
-        item = t["texto"]
+    for contador, (_, t) in enumerate(pendientes, 1):
+        item = f"{contador}. {t['texto']}"
         if t.get("tag"):
             item += f" [{t['tag']}]"
         if t.get("prioridad") == "alta":
             item += " ⚠"
-        lineas.append(f"• {item}")
+        lineas.append(item)
 
     cuerpo = "\n".join(lineas)
     if len(cuerpo.encode("utf-8")) > paths.NTFY_LIMITE_BYTES:
@@ -105,12 +131,43 @@ def construir_mensaje_pendientes(tareas):
     return "Check List", cuerpo, "memo", prioridad
 
 
+def construir_acciones(pendientes, server, cmd_topic, token):
+    """Hasta 3 botones (límite de ntfy) para completar las primeras tareas."""
+    acciones = []
+    for contador, (_, t) in enumerate(pendientes[:3], 1):
+        if t.get("id") is None:
+            continue
+        acciones.append(
+            {
+                "action": "http",
+                "label": f"✔ Completar {contador}",
+                "url": f"{server.rstrip('/')}/{cmd_topic}",
+                "method": "POST",
+                "body": f"done:{t['id']}:{token}",
+                "clear": False,
+            }
+        )
+    return acciones
+
+
 def enviar_pendientes(tareas):
     titulo, cuerpo, ntfy_tags, prioridad = construir_mensaje_pendientes(tareas)
+    pendientes = models.obtener_pendientes_ordenados(tareas)
+
+    acciones = []
+    if pendientes:
+        server_cmd, cmd_topic, token = obtener_comandos()
+        acciones = construir_acciones(pendientes, server_cmd, cmd_topic, token)
+
     topic, server = obtener_ntfy()
     action_url = f"{server.rstrip('/')}/{topic}" if topic else None
     return enviar_notificacion(
-        titulo, cuerpo, tags=ntfy_tags, prioridad=prioridad, action_url=action_url
+        titulo,
+        cuerpo,
+        tags=ntfy_tags,
+        prioridad=prioridad,
+        acciones=acciones,
+        action_url=action_url,
     )
 
 

@@ -141,3 +141,37 @@ def test_imprimir_tarea_usa_tag(data_dir, capsys):
     cli.main(["list"])
     out = capsys.readouterr().out
     assert "[personal]" in out
+
+
+def test_sync_llama_a_procesar(data_dir, monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(
+        cli.sync,
+        "procesar_comandos",
+        lambda silencioso=False: llamadas.append(silencioso) or 0,
+    )
+    assert cli.main(["sync"]) == 0
+    assert llamadas == [False]
+
+
+def test_list_sincroniza_en_silencio(data_dir, monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(
+        cli.sync,
+        "procesar_comandos",
+        lambda silencioso=False: llamadas.append(silencioso) or 0,
+    )
+    cli.main(["list"])
+    assert llamadas == [True]
+
+
+def test_notify_sincroniza_antes_de_enviar(data_dir, monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(
+        cli.sync,
+        "procesar_comandos",
+        lambda silencioso=False: llamadas.append(silencioso) or 0,
+    )
+    monkeypatch.setattr(cli.notify, "enviar_pendientes", lambda tareas: True)
+    assert cli.main(["notify"]) == 0
+    assert llamadas == [True]
